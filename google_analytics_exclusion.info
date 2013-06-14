@@ -1,0 +1,5 @@
+name = Google Analytics Exclusion
+description = Excludes IP addresses from Google Analytics with a cookie.
+dependencies[] = googleanalytics
+package = Statistics
+core = 7.x
