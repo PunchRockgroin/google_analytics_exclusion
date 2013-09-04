@@ -18,54 +18,64 @@ function google_analytics_exclusion_help($path, $arg) {
 /**
  * Implements hook_menu().
  */
-function google_analytics_exclusion_menu() { 
+function google_analytics_exclusion_menu() {
   $items['admin/config/system/google_analytics_exclusion'] = array(
     'title' => 'Google Analytics Exclusion',
-				'description' => 'Excludes by IP from tracking',
-    'page callback' => 'drupal_get_form',
-    'page arguments' => array('google_analytics_exclusion_settings_form'),
-				'access arguments' => array('administer google analytics'),
-				'file' => 'include/google_analytics_exclusion.admin.inc',
-				'type' => MENU_NORMAL_ITEM,
+        'description' => 'Excludes by IP from tracking',
+        'page callback' => 'drupal_get_form',
+        'page arguments' => array('google_analytics_exclusion_settings_form'),
+        'access arguments' => array('administer google analytics'),
+        'file' => 'include/google_analytics_exclusion.admin.inc',
+        'type' => MENU_NORMAL_ITEM,
   );
   return $items;
 }
 
 function google_analytics_exclusion_preprocess_html(&$vars){
-		
-	if (!path_is_admin(current_path())) {
-				drupal_add_library('system','jquery.cookie');
-				$gae_exclusion_array_ipv4 = _gae_getExclusions();
-				$gae_exclusion_array_ipv6 = _gae_getExclusions('ipv6');
-				if($gae_exclusion_array_ipv4 || $gae_exclusion_array_ipv6){
-						drupal_add_js(array(
-										'gae' => array(
-																						'gaExclusionKey' => variable_get('google_analytics_exclusion_key', 'exclude'),
-																						'gaExclusionIPv4s' => $gae_exclusion_array_ipv4
-			//																			,'gaExclusionIPv6s' => $gae_exclusion_array_ipv6
-																			)
-									), array('type' => 'setting'));
-						drupal_add_js(drupal_get_path('module', 'google_analytics_exclusion') . '/scripts/google_analytics_exclusion.js', array(
-								'type' => 'file',
-								'scope' => 'footer',
-								'group' => JS_THEME,
-								'every_page' => TRUE,
-								'weight' => 999,
-						));
-				}		
-	}
+
+  if (!path_is_admin(current_path())) {
+        drupal_add_library('system','jquery.cookie');
+        $gae_exclusion_array_ipv4 = _gae_getExclusions();
+        $gae_exclusion_array_ipv6 = _gae_getExclusions('ipv6');
+        $gae_property = variable_get('googleanalytics_account', 'UA-XXXXXX-Y');
+        if($gae_exclusion_array_ipv4 || $gae_exclusion_array_ipv6){
+            drupal_add_js(array(
+                    'gae' => array(
+                                    'gaProperty' => $gae_property,
+                                    'gaExclusionKey' => variable_get('google_analytics_exclusion_key', 'exclude'),
+                                    'gaExclusionIPv4s' => $gae_exclusion_array_ipv4
+//                                      ,'gaExclusionIPv6s' => $gae_exclusion_array_ipv6
+                                      )
+                  ), array('type' => 'setting'));
+            drupal_add_js("var gaProperty = '".$gae_property."';var disableStr = 'ga-disable-' + gaProperty;if (document.cookie.indexOf(disableStr + '=true') > -1) {window[disableStr] = true;}",
+              array(
+                'type' => 'inline',
+                'scope' => 'header',
+                'group' => JS_DEFAULT,
+                'weight' => -9999
+              )
+            );
+            drupal_add_js(drupal_get_path('module', 'google_analytics_exclusion') . '/scripts/google_analytics_exclusion.js', array(
+                'type' => 'file',
+                'scope' => 'header',
+                'group' => JS_DEFAULT,
+                'every_page' => TRUE,
+                'weight' => -999,
+            ));
+        }
+  }
 }
 
 
 function _gae_getExclusions($type = 'ipv4'){
-				$ips = array();
-				
-				$ipSettings = variable_get('google_analytics_exclusion_'.$type, false);
-				
-				if($ipSettings){
-							$ips	= preg_split('/\r\n|[\r\n]/', trim($ipSettings));
-				}else{
-								return false;
-				}
-				return $ips;
+        $ips = array();
+
+        $ipSettings = variable_get('google_analytics_exclusion_'.$type, false);
+
+        if($ipSettings){
+              $ips  = preg_split('/\r\n|[\r\n]/', trim($ipSettings));
+        }else{
+                return false;
+        }
+        return $ips;
 }
